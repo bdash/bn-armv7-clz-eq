@@ -1,0 +1,26 @@
+[package]
+name = "bn-armv7-clz-eq"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+binaryninja = { git = "https://github.com/Vector35/binaryninja-api.git", branch = "dev" }
+bn-bdash-extras = { git = "https://github.com/bdash/bn-bdash-extras.git", branch = "macros", features = ["macros"] }
+log = "0.4"
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.dev]
+panic = "abort"
+build-override.debug = true
+
+[profile.release]
+panic = "abort"
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+cast_possible_truncation = { level = "allow" }
+
+[patch."https://github.com/Vector35/binaryninja-api.git"]
+binaryninja = { git = "https://github.com/bdash/binaryninja-api.git", branch = "all-the-things" }
