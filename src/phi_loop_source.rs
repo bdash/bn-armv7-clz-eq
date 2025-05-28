@@ -22,14 +22,22 @@ struct CopyReg {
 fn resolve_set_reg_ssa_to_reg_ssa_chain<'func, M>(
     ssa: &'func Ref<LowLevelILFunction<M, SSA>>,
     mut def: LowLevelILInstruction<'func, M, SSA>,
-) -> Option<LowLevelILInstruction<'func, M, SSA>>
+) -> binaryninja::low_level_il::instruction::LowLevelILInstruction<
+    'func,
+    M,
+    binaryninja::low_level_il::function::SSA,
+>
 where
     M: FunctionMutability,
 {
     while let Ok(copy) = CopyReg::try_from(def) {
-        def = ssa.get_ssa_register_definition(&copy.source)?;
+        if let Some(next) = ssa.get_ssa_register_definition(&copy.source) {
+            def = next;
+        } else {
+            return def
+        }
     }
-    Some(def)
+    def
 }
 
 /// Result of matching the definition of a `RegPhi`'s incoming defs against instruction matchers of type `L` and `R`
@@ -88,8 +96,8 @@ where
 
     let initial_1 = ssa.get_ssa_register_definition(&sources[0])?;
     let initial_2 = ssa.get_ssa_register_definition(&sources[1])?;
-    let resolved_1 = resolve_set_reg_ssa_to_reg_ssa_chain(ssa, initial_1)?;
-    let resolved_2 = resolve_set_reg_ssa_to_reg_ssa_chain(ssa, initial_2)?;
+    let resolved_1 = resolve_set_reg_ssa_to_reg_ssa_chain(ssa, initial_1);
+    let resolved_2 = resolve_set_reg_ssa_to_reg_ssa_chain(ssa, initial_2);
 
     if let (Ok(t1), Ok(t2)) = (T1::try_from(resolved_1), T2::try_from(resolved_2)) {
         Some(PhiLoopSource {
