@@ -14,14 +14,7 @@ use binaryninja::{
 };
 use bn_bdash_extras::{
     activity,
-    llil::{
-        BinaryExpression,
-        ExpressionKind::{Const, RegSsa},
-        Instruction,
-        InstructionKind::If,
-        macros::InstrMatch,
-        require_full_register,
-    },
+    llil::{Expression, InstrMatch, Instruction, InstructionKind::If, require_full_register},
 };
 
 mod phi_loop_source;
@@ -102,14 +95,15 @@ where
 }
 
 #[derive(InstrMatch, Debug)]
-#[pattern(instr @ SetRegSsa(_, Sub(op)))]
+#[pattern(instr @ SetRegSsa(_, Sub(lhs, rhs)))]
 struct SetToSub<'func, M, F>
 where
     M: FunctionMutability,
     F: FunctionForm,
 {
     instr: Instruction<'func, M, F>,
-    op: Box<BinaryExpression<'func, M, F>>,
+    lhs: Expression<'func, M, F>,
+    rhs: Expression<'func, M, F>,
 }
 
 #[derive(Debug)]
@@ -217,12 +211,13 @@ fn rewrite_equality_test(matched: &MatchedClzLsr<'_>) {
     let ClzLsrPattern::Equality { sub } = &matched.pattern else {
         unreachable!();
     };
-    let (lhs, rhs) = (&sub.op.0, &sub.op.1);
     log::debug!(
-        "{:#0x} {}: Rewriting {}:\n\tLHS: {lhs:0x?}\n\tRHS: {rhs:0x?}",
+        "{:#0x} {}: Rewriting {}:\n\tLHS: {:0x?}\n\tRHS: {:0x?}",
         matched.instr.address(),
         matched.instr.index,
         matched.description(),
+        sub.lhs,
+        sub.rhs
     );
 
     unsafe {
@@ -234,8 +229,8 @@ fn rewrite_equality_test(matched: &MatchedClzLsr<'_>) {
                 matched.dest_reg,
                 matched.llil.cmp_e(
                     sub.instr.size().expect("SetRegSsa should have a size"),
-                    lhs.inner.non_ssa_form(matched.llil),
-                    rhs.inner.non_ssa_form(matched.llil),
+                    sub.lhs.inner.non_ssa_form(matched.llil),
+                    sub.rhs.inner.non_ssa_form(matched.llil),
                 ),
             ),
         );

@@ -7,10 +7,7 @@ use binaryninja::{
     },
     rc::Ref,
 };
-use bn_bdash_extras::llil::{
-    Instruction,
-    macros::{InstrMatch, try_let_instr},
-};
+use bn_bdash_extras::llil::{InstrMatch, Instruction, try_let_instr};
 
 #[derive(InstrMatch, Debug)]
 #[pattern(SetRegSsa(_, RegSsa(source)))]
@@ -34,7 +31,7 @@ where
         if let Some(next) = ssa.get_ssa_register_definition(&copy.source) {
             def = next;
         } else {
-            return def
+            return def;
         }
     }
     def
